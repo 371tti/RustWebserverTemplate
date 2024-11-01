@@ -15,6 +15,14 @@ async fn index(app_set: web::Data<AppSet>, req: HttpRequest) -> impl Responder {
     "Hello, world!"
 }
 
+#[actix_web::get("/err/{statuscode}")]
+pub async fn error_test(statuscode: web::Path<u16>) -> impl Responder {
+    let status_code = *statuscode;
+    HttpResponse::build(actix_web::http::StatusCode::from_u16(status_code)
+        .unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR))
+        .finish()
+}
+
 
 fn err_handler<B>(res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>, actix_web::Error> {
     let app_set = res.request().app_data::<web::Data<AppSet>>().unwrap();
@@ -38,6 +46,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::ErrorHandlers::new().default_handler(err_handler))
             .app_data(app_set.clone())
             .service(index)
+            .service(error_test)
     })
     .bind(app_config.server_bind.clone())?
     .workers(app_config.server_workers.clone())

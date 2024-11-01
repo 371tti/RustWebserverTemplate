@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use actix_web::{body::BoxBody, dev::ServiceResponse, HttpResponse};
 use tera::{Tera, Context};
+use chrono::Utc;
 
 pub struct ErrHandler {
     pub status_color: HashMap<u16, String>,
@@ -53,6 +54,8 @@ impl ErrHandler {
         status_message.insert(511, "NetworkAuthenticationRequired".to_string());
 
         let mut suggestion_fix_message = HashMap::new();
+
+        // 4xx クライアントエラー
         suggestion_fix_message.insert(400, {
             let mut map = HashMap::new();
             map.insert(1, "Check the request syntax".to_string());
@@ -90,6 +93,18 @@ impl ErrHandler {
             map.insert(3, "Ensure the method is supported".to_string());
             map
         });
+        suggestion_fix_message.insert(406, {
+            let mut map = HashMap::new();
+            map.insert(1, "Check the requested media type.".to_string());
+            map.insert(2, "Ensure server supports the requested format.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(407, {
+            let mut map = HashMap::new();
+            map.insert(1, "Verify proxy authentication.".to_string());
+            map.insert(2, "Contact network administrator for proxy details.".to_string());
+            map
+        });
         suggestion_fix_message.insert(408, {
             let mut map = HashMap::new();
             map.insert(1, "Check your internet connection".to_string());
@@ -97,6 +112,80 @@ impl ErrHandler {
             map.insert(3, "Retry the request after a moment".to_string());
             map
         });
+        suggestion_fix_message.insert(409, {
+            let mut map = HashMap::new();
+            map.insert(1, "Resolve conflicting resources.".to_string());
+            map.insert(2, "Ensure request data is consistent.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(410, {
+            let mut map = HashMap::new();
+            map.insert(1, "This resource is no longer available.".to_string());
+            map.insert(2, "Contact the website administrator for information.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(411, {
+            let mut map = HashMap::new();
+            map.insert(1, "Set 'Content-Length' header in request.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(412, {
+            let mut map = HashMap::new();
+            map.insert(1, "Verify request preconditions.".to_string());
+            map.insert(2, "Adjust precondition headers.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(413, {
+            let mut map = HashMap::new();
+            map.insert(1, "Reduce the request entity size.".to_string());
+            map.insert(2, "Contact administrator for size limits.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(414, {
+            let mut map = HashMap::new();
+            map.insert(1, "Simplify the URL length.".to_string());
+            map.insert(2, "Use a shorter URL structure.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(415, {
+            let mut map = HashMap::new();
+            map.insert(1, "Check the media type in request.".to_string());
+            map.insert(2, "Ensure server supports media type.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(416, {
+            let mut map = HashMap::new();
+            map.insert(1, "Check requested range headers.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(417, {
+            let mut map = HashMap::new();
+            map.insert(1, "Check 'Expect' request header.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(418, {
+            let mut map = HashMap::new();
+            map.insert(1, "I'm a teapot, not a coffee machine.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(422, {
+            let mut map = HashMap::new();
+            map.insert(1, "Check request syntax and data.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(429, {
+            let mut map = HashMap::new();
+            map.insert(1, "Reduce the frequency of requests.".to_string());
+            map.insert(2, "Wait before sending more requests.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(431, {
+            let mut map = HashMap::new();
+            map.insert(1, "Reduce header data size.".to_string());
+            map
+        });
+        
+        // 5xx サーバーエラー
         suggestion_fix_message.insert(500, {
             let mut map = HashMap::new();
             map.insert(1, "Wait a few moments and retry the request".to_string());
@@ -132,6 +221,18 @@ impl ErrHandler {
             map.insert(3, "Retry the request after a moment".to_string());
             map
         });
+        suggestion_fix_message.insert(505, {
+            let mut map = HashMap::new();
+            map.insert(1, "Verify the HTTP version used.".to_string());
+            map.insert(2, "Contact administrator to check version support.".to_string());
+            map
+        });
+        suggestion_fix_message.insert(511, {
+            let mut map = HashMap::new();
+            map.insert(1, "Authenticate to access network.".to_string());
+            map
+        });
+        
 
 
 
@@ -184,11 +285,7 @@ impl ErrHandler {
                 .and_then(|ua| ua.to_str().ok())
                 .unwrap_or("Unknown").to_string()
         );
-        debug_info.insert("Last-Time".to_string(),
-            res.request().headers().get("Last-Time")
-                .and_then(|t| t.to_str().ok())
-                .unwrap_or("Unknown").to_string()
-        );
+        debug_info.insert("Last-Time".to_string(), Utc::now().to_rfc3339());
         debug_info.insert("Cf-Connecting-Ip".to_string(),
             res.request().headers().get("Cf-Connecting-Ip")
                 .and_then(|ip| ip.to_str().ok())
