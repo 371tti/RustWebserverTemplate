@@ -1,5 +1,5 @@
 use actix_web::dev::ServiceResponse;
-use actix_web::{middleware, web, App, HttpRequest, HttpServer, Responder};
+use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web::middleware::{ErrorHandlerResponse, Logger};
 use env_logger::Env;
 use sys::app_set;
@@ -8,6 +8,7 @@ use crate::sys::app_set::AppSet;
 use crate::sys::init::AppConfig;
 
 mod sys;
+mod handler;
 
 #[actix_web::get("/")]
 async fn index(app_set: web::Data<AppSet>, req: HttpRequest) -> impl Responder {
@@ -17,8 +18,8 @@ async fn index(app_set: web::Data<AppSet>, req: HttpRequest) -> impl Responder {
 
 fn err_handler<B>(res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>, actix_web::Error> {
     let app_set = res.request().app_data::<web::Data<AppSet>>().unwrap();
-    let response = render_error_page(res);
-    Ok(ErrorHandlerResponse::Response(res.into_response(response.map_into_left_body())))
+    let response = app_set.err_handler.page_generate(&res);
+    return Ok(ErrorHandlerResponse::Response(res.into_response(response.map_into_right_body())));
 }
 
 #[actix_web::main]
