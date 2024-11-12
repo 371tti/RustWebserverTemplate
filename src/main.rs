@@ -10,9 +10,9 @@ use crate::sys::init::AppConfig;
 mod sys;
 mod handler;
 
-#[actix_web::get("/")]
+#[actix_web::get("/{path:.*}")]
 async fn index(app_set: web::Data<AppSet>, req: HttpRequest) -> impl Responder {
-    "Hello, world!"
+    app_set.handler.handle_request(req).await
 }
 
 #[actix_web::get("/err/{statuscode}")]
